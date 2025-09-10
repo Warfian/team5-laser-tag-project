@@ -1,0 +1,1 @@
+This is the repository for team 5's laser tag project. More will be added to this readme as more is added to the repository.
