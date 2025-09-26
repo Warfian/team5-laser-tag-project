@@ -11,7 +11,7 @@ import queue
 
 BROADCAST_PORT = 7500
 RECEIVE_PORT   = 7501
-broadcast_addr   = "127.0.0.1"
+broadcast_addr = "127.0.0.1"
 buffer_size    = 1024
 incoming_q     = queue.Queue()
 
