@@ -1,12 +1,52 @@
-# Needs splash screen 
 # Needs to Update one player into the database via application
 import dearpygui.dearpygui as dpg
+import pygame
+import time
+import sys
 
 tableWidth = 450
 tableHeight = 410
 buttonWidth = 100
 buttonHeight = 100
 spacerGap = 20
+
+def splash_screen():
+    pygame.init()
+
+    # Match your planned DPG size
+    width, height = 1000, 640
+    screen = pygame.display.set_mode((width, height))
+    pygame.display.set_caption("Laser Tag")  # match title
+
+    try:
+        icon = pygame.image.load("table_logo.ico")  
+        pygame.display.set_icon(icon)
+    except pygame.error:
+        print("Warning: Could not load icon for title bar")
+
+    try:
+        logo = pygame.image.load("logo.jpg")
+    except pygame.error:
+        print("Error: Could not load image.")
+        pygame.quit()
+        sys.exit()
+
+    logo = pygame.transform.smoothscale(logo, (940, 600))
+    logorect = logo.get_rect()
+
+    screen.fill((0, 0, 0))  # black background
+    logorect.center = (width // 2, height // 2 - 20)
+    screen.blit(logo, logorect)
+    pygame.display.flip()
+
+    start_time = time.time()
+    while time.time() - start_time < 3:  # show for 3 seconds
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+    pygame.quit()
 
 # Reset all Red/Green team input fields back to default values.
 # Triggered by the 'Clear' button or F12 key. 
@@ -44,7 +84,7 @@ def resize_team_window(*_):
     dpg.set_item_pos("buttons_group", (buttons_x, buttons_y))
 
 def show_player_entry():
-    with dpg.window(tag="team_window", label="Teams",no_title_bar=True, no_move=True, no_resize=True, no_scrollbar=True) as team_window:
+    with dpg.window(tag="team_window", label="Teams",no_title_bar=True, no_move=True, no_resize=True, no_scrollbar=True) as teamWindow:
         with dpg.group(tag= "tables_group", horizontal=True):  # Side-by-side layout
             # Red Team table
             with dpg.child_window(tag="redTeam", width=tableWidth, height=tableHeight) as redTeam:
@@ -112,18 +152,25 @@ def show_player_entry():
                 dpg.bind_item_theme(greenTeam, greenTheme)
         # Buttons and Shortcuts
         with dpg.group(tag="buttons_group", horizontal=True):
-            dpg.add_button(label="F5 Start", tag="startButton", width=buttonWidth, height=buttonHeight) #add callback for start
+            dpg.add_button(label="  F5\nStart\nGame", tag="startButton", width=buttonWidth, height=buttonHeight) #add callback for start
             dpg.add_spacer(width=spacerGap)   # small gap between buttons
-            dpg.add_button(label="F12 Clear", tag="clearButton", width=buttonWidth, height=buttonHeight, callback=clear_entries)
+            dpg.add_button(label=" F12\nClear", tag="clearButton", width=buttonWidth, height=buttonHeight, callback=clear_entries)
         with dpg.handler_registry():
             dpg.add_key_press_handler(dpg.mvKey_F5) #add callback for start
             dpg.add_key_press_handler(dpg.mvKey_F12, callback=clear_entries)
+    with dpg.theme() as windowTheme:
+        with dpg.theme_component(dpg.mvAll):
+            dpg.add_theme_color(dpg.mvThemeCol_WindowBg, (0, 0, 0))
+    dpg.bind_item_theme(teamWindow, windowTheme)
+            
 
 # Initialize DearPyGui, create the UI, and start the render loop.
 def main():
+    splash_screen()  # Show splash screen first
+
     dpg.create_context()
     dpg.create_viewport(title="Laser Tag", width=1000, height=640)
-    dpg.set_viewport_small_icon("logo.ico")
+    dpg.set_viewport_small_icon("table_logo.ico")
     dpg.setup_dearpygui()
 
     show_player_entry()
@@ -140,3 +187,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
