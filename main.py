@@ -1,6 +1,7 @@
 # Needs to Update one player into the database via application
 import dearpygui.dearpygui as dpg
 import pygame
+import network
 import time
 import sys
 
@@ -101,7 +102,7 @@ def show_player_entry():
                             dpg.add_text(f"Player {i + 1}")
                             dpg.add_input_int(tag=f"red_id_{i}", width=80, step=0, step_fast=0)
                             dpg.add_input_text(tag=f"red_code_{i}", width=120)
-                            dpg.add_input_int(tag=f"red_equip_{i}", width=100, step=0, step_fast=0)
+                            dpg.add_input_int(tag=f"red_equip_{i}", width=100, step=0, step_fast=0, callback=equipment_added_callback, on_enter=True)
                 # Red Team Theme
                 with dpg.theme() as redTheme:
                     with dpg.theme_component(dpg.mvAll):
@@ -134,7 +135,7 @@ def show_player_entry():
                             dpg.add_text(f"Player {i + 1}")
                             dpg.add_input_int(tag=f"green_id_{i}", width=80, step=0, step_fast=0)
                             dpg.add_input_text(tag=f"green_code_{i}", width=120)
-                            dpg.add_input_int(tag=f"green_equip_{i}", width=100, step=0, step_fast=0)
+                            dpg.add_input_int(tag=f"green_equip_{i}", width=100, step=0, step_fast=0, callback=equipment_added_callback, on_enter=True)
                 
                 # Green Team Theme
                 with dpg.theme() as greenTheme:
@@ -155,6 +156,17 @@ def show_player_entry():
             dpg.add_button(label="  F5\nStart\nGame", tag="startButton", width=buttonWidth, height=buttonHeight) #add callback for start
             dpg.add_spacer(width=spacerGap)   # small gap between buttons
             dpg.add_button(label=" F12\nClear", tag="clearButton", width=buttonWidth, height=buttonHeight, callback=clear_entries)
+            # adds text box and utilizes callback to edit netword addr on enter;
+            # can be altered to project needs/group consensus
+            dpg.add_spacer(width=spacerGap)
+            with dpg.child_window(tag="network_box", width=150, height=buttonHeight, border=True):
+                dpg.add_text("Network Address")
+                dpg.add_input_text(tag="network_address", default_value="127.0.0.1", callback=network_change_callback, on_enter=True, width=120)
+            with dpg.theme() as networkTheme:
+                with dpg.theme_component(dpg.mvAll):
+                    dpg.add_theme_color(dpg.mvThemeCol_ChildBg, (0, 0, 0, 0))   # dark gray background
+                    dpg.add_theme_color(dpg.mvThemeCol_Border, (0, 0, 0, 0)) # light gray border
+            dpg.bind_item_theme("network_box", networkTheme)
         with dpg.handler_registry():
             dpg.add_key_press_handler(dpg.mvKey_F5) #add callback for start
             dpg.add_key_press_handler(dpg.mvKey_F12, callback=clear_entries)
@@ -163,10 +175,22 @@ def show_player_entry():
             dpg.add_theme_color(dpg.mvThemeCol_WindowBg, (0, 0, 0))
     dpg.bind_item_theme(teamWindow, windowTheme)
             
+# network callbacks to broadcast equip id 
+# && change network addr
+def equipment_added_callback (sender, new_val):
+    equip_id_str = str(new_val)
+
+    # broadcast player added event
+    # (sendto() is a method in socket, imported in network)
+    network.broadcast_sock.sendto(str.encode(equip_id_str), network.broadcast_addr_port)
+
+def network_change_callback (sender, new_addr):
+    network.change_broadcast_ip (new_addr)
+    network.broadcast_sock, network.broadcast_addr_port = network.setup_broadcast_socket(network.broadcast_addr, network.BROADCAST_PORT)
 
 # Initialize DearPyGui, create the UI, and start the render loop.
 def main():
-    splash_screen()  # Show splash screen first
+    #splash_screen()  # Show splash screen first
 
     dpg.create_context()
     dpg.create_viewport(title="Laser Tag", width=1000, height=640)
@@ -178,6 +202,8 @@ def main():
 
     dpg.show_viewport()
 
+    network.start_listening(network.recv_sock, network.incoming_q)
+
     # Manual render loop for dynamic resizing
     while dpg.is_dearpygui_running():
         resize_team_window() 
@@ -187,4 +213,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
