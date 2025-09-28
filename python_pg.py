@@ -44,6 +44,12 @@ def add(id, name):
 
     except Exception as error:
         print(f"Error connecting to PostgreSQL database: {error}")
+    
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
 
 def disconnect():
     # Connect to PostgreSQL
@@ -57,5 +63,8 @@ def disconnect():
     rows = cursor.fetchall()
     for row in rows:
         print(row)
-
-
+    
+    if cursor:
+        cursor.close()
+    if conn:
+        conn.close()
