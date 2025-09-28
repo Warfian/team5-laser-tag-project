@@ -15,5 +15,6 @@ FortyFathom    -->  Jordan Wood
 
 **How to Run:**
 1. Download contents of main github folder into local directory.
-2. Run install script by typing "sudo ./install.sh" in terminal in your local directory (NOTE: The DearPyGUI install in the script will take a while (5ish minutes))
-3. In the terminal, either type "make" to run the makefile or type "python3 main.py" to run directly
+2. In a terminal that's in the local directory, type "chmod +x install.sh" to make the install script executable.
+3. Execute install script by typing "./install.sh" (NOTE: The DearPyGUI install in the script will take a while (5ish minutes)).
+4. The program will start automatically once everything is installed. If you need to run it again after install, type either "make" to run the makefile or type "python3 main.py" to run directly.
