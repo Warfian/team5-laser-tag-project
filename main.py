@@ -1,4 +1,3 @@
-# Needs to Update one player into the database via application
 import dearpygui.dearpygui as dpg
 import python_pg as db
 import pygame
