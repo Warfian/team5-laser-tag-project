@@ -1,5 +1,6 @@
 # Needs to Update one player into the database via application
 import dearpygui.dearpygui as dpg
+import python_pg as db
 import pygame
 import network
 import time
@@ -10,6 +11,43 @@ tableHeight = 410
 buttonWidth = 100
 buttonHeight = 100
 spacerGap = 20
+entry_book = {}
+
+# Callback function to add to db
+# Since ID must be paired, with codename, we need to store IDs to be paired with the codename
+def add_to_db(sender, app_data, user_data):
+    # Extract the user input from the input field and prep SQL input fields
+    data = dpg.get_value(sender)
+    id = 0
+    name = 0
+
+    # Add an arbitrary value to the green table listing to prevent overlap with Entry Book keys
+    if "green" in sender:
+        user_data += 20
+
+    # If the table does not have an ID-name pair, store the given data in a dictionary for later.
+    if user_data not in entry_book.keys():
+        # Assign the entry to its number on the entry screen
+        entry_book[user_data] = data
+
+        # Make sure everything looks good
+        print(entry_book)
+        return
+    
+    # If caller has a matching value and is a name, grab the ID from the dictionary
+    elif "code" in sender:
+        id = entry_book[user_data]
+        name = data
+    # Repeat the same process for a callback from an ID field
+    else:
+        id = data
+        name = entry_book[user_data]
+
+    # Send both inputs to the database
+    db.add(id, name)
+
+    # Remove the Entry from the Entry Book
+    entry_book.pop(user_data)
 
 def splash_screen():
     pygame.init()
@@ -100,8 +138,11 @@ def show_player_entry():
                     for i in range(15):
                         with dpg.table_row():
                             dpg.add_text(f"Player {i + 1}")
-                            dpg.add_input_int(tag=f"red_id_{i}", width=80, step=0, step_fast=0)
-                            dpg.add_input_text(tag=f"red_code_{i}", width=120)
+
+                            # Add callback, user_data, and on_enter to red_id and red_code to add to db
+                            # Add callback, user_data, and on_enter to red_equip to broadcast equipment id
+                            dpg.add_input_int(tag=f"red_id_{i}", width=80, step=0, step_fast=0, callback=add_to_db, user_data=i, on_enter=True)
+                            dpg.add_input_text(tag=f"red_code_{i}", width=120, callback=add_to_db, user_data=i, on_enter=True)
                             dpg.add_input_int(tag=f"red_equip_{i}", width=100, step=0, step_fast=0, callback=equipment_added_callback, on_enter=True)
                 # Red Team Theme
                 with dpg.theme() as redTheme:
@@ -133,8 +174,11 @@ def show_player_entry():
                     for i in range(15):
                         with dpg.table_row():
                             dpg.add_text(f"Player {i + 1}")
-                            dpg.add_input_int(tag=f"green_id_{i}", width=80, step=0, step_fast=0)
-                            dpg.add_input_text(tag=f"green_code_{i}", width=120)
+
+                            # Add callback, user_data, and on_enter to green_id and green_code to add to db
+                            # Add callback, user_data, and on_enter to green_equip to broadcast equipment id
+                            dpg.add_input_int(tag=f"green_id_{i}", width=80, step=0, step_fast=0, callback=add_to_db, user_data=i, on_enter=True)
+                            dpg.add_input_text(tag=f"green_code_{i}", width=120, callback=add_to_db, user_data=i, on_enter=True)
                             dpg.add_input_int(tag=f"green_equip_{i}", width=100, step=0, step_fast=0, callback=equipment_added_callback, on_enter=True)
                 
                 # Green Team Theme
@@ -182,6 +226,7 @@ def equipment_added_callback (sender, new_val):
 
     # broadcast player added event
     # (sendto() is a method in socket, imported in network)
+    # print(f"Sending code {equip_id_str} to {network.broadcast_addr_port}") <-- test print statement
     network.broadcast_sock.sendto(str.encode(equip_id_str), network.broadcast_addr_port)
 
 def network_change_callback (sender, new_addr):
@@ -190,7 +235,7 @@ def network_change_callback (sender, new_addr):
 
 # Initialize DearPyGui, create the UI, and start the render loop.
 def main():
-    #splash_screen()  # Show splash screen first
+    splash_screen()
 
     dpg.create_context()
     dpg.create_viewport(title="Laser Tag", width=1000, height=640)
