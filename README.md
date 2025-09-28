@@ -1,14 +1,11 @@
 **Team 5 Laser Tag Project**
 
-===========================================
-=  Github Usernames  ==    Real Names     =
-===========================================
-=      Warfian       ==   Daniel Eyraud   =
-=      Cole-C25      ==    Cole Cooper    =
-=   crystalgooding   ==  Crystal Gooding  =
-=      kylerj15      ==    Kyler Jones    =
-=    FortyFathom     ==    Jordan Wood    =
-===========================================
+**Github User    --> Real Name**
+Warfian        -->  Daniel Eyraud
+Cole-C25       -->  Cole Cooper
+crystalgooding -->  Crystal Gooding
+kylerj15       -->  Kyler Jones
+FortyFathom    -->  Jordan Wood
 
 **Current Functionality:**
 - Launches splash screen and player entry table upon startup
