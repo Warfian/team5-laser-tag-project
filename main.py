@@ -1,15 +1,55 @@
-# Needs to Update one player into the database via application
 import dearpygui.dearpygui as dpg
+import python_pg as db
 import pygame
 import network
 import time
 import sys
+
+from gamescreen import game_screen
+from gamescreen import resize_game_window
 
 tableWidth = 450
 tableHeight = 410
 buttonWidth = 100
 buttonHeight = 100
 spacerGap = 20
+entry_book = {}
+
+# Callback function to add to db
+# Since ID must be paired, with codename, we need to store IDs to be paired with the codename
+def add_to_db(sender, app_data, user_data):
+    # Extract the user input from the input field and prep SQL input fields
+    data = dpg.get_value(sender)
+    id = 0
+    name = 0
+
+    # Add an arbitrary value to the green table listing to prevent overlap with Entry Book keys
+    if "green" in sender:
+        user_data += 20
+
+    # If the table does not have an ID-name pair, store the given data in a dictionary for later.
+    if user_data not in entry_book.keys():
+        # Assign the entry to its number on the entry screen
+        entry_book[user_data] = data
+
+        # Make sure everything looks good
+        print(entry_book)
+        return
+    
+    # If caller has a matching value and is a name, grab the ID from the dictionary
+    elif "code" in sender:
+        id = entry_book[user_data]
+        name = data
+    # Repeat the same process for a callback from an ID field
+    else:
+        id = data
+        name = entry_book[user_data]
+
+    # Send both inputs to the database
+    db.add(id, name)
+
+    # Remove the Entry from the Entry Book
+    entry_book.pop(user_data)
 
 def splash_screen():
     pygame.init()
@@ -63,26 +103,66 @@ def clear_entries():
         dpg.set_value(f"green_code_{i}", "")
         dpg.set_value(f"green_equip_{i}", 0)
 
-
 # Adjust size and position of the team window, tables, and buttons whenever the viewport is resized.
-def resize_team_window(*_):
+def resize_window(*_):
     view_width = dpg.get_viewport_client_width()
     view_height = dpg.get_viewport_client_height()
 
-    # Resize main window to fit viewport
-    dpg.set_item_width("team_window", view_width )
-    dpg.set_item_height("team_window", view_height)
+    # Resize team_window
+    if dpg.does_item_exist("team_window"):
+        dpg.set_item_width("team_window", view_width)
+        dpg.set_item_height("team_window", view_height)
 
-    # Center the tables
-    total_table_width = tableWidth * 2 + 20
-    left_table_spacer = max((view_width - total_table_width) // 2, 0)
-    dpg.set_item_pos("tables_group", (left_table_spacer, 50))
+        if dpg.does_item_exist("tables_group") and dpg.does_item_exist("buttons_group"):
+            total_table_width = tableWidth * 2 + 20
+            left_table_spacer = max((view_width - total_table_width) // 2, 0)
+            dpg.set_item_pos("tables_group", (left_table_spacer, 50))
 
-    # Center the buttons under the tables
-    total_buttons_width = buttonWidth * 2 + spacerGap
-    buttons_x = max((view_width - total_buttons_width) // 2, 0)
-    buttons_y = tableHeight + 70  
-    dpg.set_item_pos("buttons_group", (buttons_x, buttons_y))
+            total_buttons_width = buttonWidth * 2 + spacerGap
+            buttons_x = max((view_width - total_buttons_width) // 2, 0)
+            buttons_y = tableHeight + 70
+            dpg.set_item_pos("buttons_group", (buttons_x, buttons_y))
+
+def start_game_callback():
+    # Capture values from entry screen
+    red_players = {}
+    green_players = {}
+    for i in range(15):
+        if dpg.does_item_exist(f"red_code_{i}") and dpg.does_item_exist(f"red_equip_{i}"):
+            code = dpg.get_value(f"red_code_{i}")
+            equip = dpg.get_value(f"red_equip_{i}")
+            if code and code.strip():
+                red_players[equip] = {"name": code.strip(), "score": 0}
+
+        if dpg.does_item_exist(f"green_code_{i}") and dpg.does_item_exist(f"green_equip_{i}"):
+            code = dpg.get_value(f"green_code_{i}")
+            equip = dpg.get_value(f"green_equip_{i}")
+            if code and code.strip():
+                green_players[equip] = {"name": code.strip(), "score": 0}
+
+    # print("DEBUG BEFORE GAME SCREEN:")
+    # print("RED PLAYERS:", red_players)
+    # print("GREEN PLAYERS:", green_players)
+
+    #Call the screen and pass players
+    game_screen(red_players, green_players)
+
+def validate_equip_id(sender, app_data):
+    tag = sender
+    team = "red" if "red" in tag else "green"
+
+    is_valid = (
+        (team == "red" and app_data % 2 != 0) or
+        (team == "green" and app_data % 2 == 0)
+    )
+
+    if not is_valid:
+        dpg.set_value(sender, 0)
+        print(f" Invalid ID {app_data} for {team.title()} Team")
+        return
+
+    # now call 
+    equipment_added_callback(sender, app_data)
 
 def show_player_entry():
     with dpg.window(tag="team_window", label="Teams",no_title_bar=True, no_move=True, no_resize=True, no_scrollbar=True) as teamWindow:
@@ -100,9 +180,12 @@ def show_player_entry():
                     for i in range(15):
                         with dpg.table_row():
                             dpg.add_text(f"Player {i + 1}")
-                            dpg.add_input_int(tag=f"red_id_{i}", width=80, step=0, step_fast=0)
-                            dpg.add_input_text(tag=f"red_code_{i}", width=120)
-                            dpg.add_input_int(tag=f"red_equip_{i}", width=100, step=0, step_fast=0, callback=equipment_added_callback, on_enter=True)
+
+                            # Add callback, user_data, and on_enter to red_id and red_code to add to db
+                            # Add callback, user_data, and on_enter to red_equip to broadcast equipment id
+                            dpg.add_input_int(tag=f"red_id_{i}", width=80, step=0, step_fast=0, callback=add_to_db, user_data=i, on_enter=True)
+                            dpg.add_input_text(tag=f"red_code_{i}", width=120, callback=add_to_db, user_data=i, on_enter=True)
+                            dpg.add_input_int(tag=f"red_equip_{i}", width=100, step=0, step_fast=0, on_enter=True, callback=validate_equip_id)
                 # Red Team Theme
                 with dpg.theme() as redTheme:
                     with dpg.theme_component(dpg.mvAll):
@@ -133,9 +216,12 @@ def show_player_entry():
                     for i in range(15):
                         with dpg.table_row():
                             dpg.add_text(f"Player {i + 1}")
-                            dpg.add_input_int(tag=f"green_id_{i}", width=80, step=0, step_fast=0)
-                            dpg.add_input_text(tag=f"green_code_{i}", width=120)
-                            dpg.add_input_int(tag=f"green_equip_{i}", width=100, step=0, step_fast=0, callback=equipment_added_callback, on_enter=True)
+
+                            # Add callback, user_data, and on_enter to green_id and green_code to add to db
+                            # Add callback, user_data, and on_enter to green_equip to broadcast equipment id
+                            dpg.add_input_int(tag=f"green_id_{i}", width=80, step=0, step_fast=0, callback=add_to_db, user_data=i, on_enter=True)
+                            dpg.add_input_text(tag=f"green_code_{i}", width=120, callback=add_to_db, user_data=i, on_enter=True)
+                            dpg.add_input_int(tag=f"green_equip_{i}", width=100, step=0, step_fast=0, on_enter=True, callback=validate_equip_id)
                 
                 # Green Team Theme
                 with dpg.theme() as greenTheme:
@@ -153,7 +239,7 @@ def show_player_entry():
                 dpg.bind_item_theme(greenTeam, greenTheme)
         # Buttons and Shortcuts
         with dpg.group(tag="buttons_group", horizontal=True):
-            dpg.add_button(label="  F5\nStart\nGame", tag="startButton", width=buttonWidth, height=buttonHeight) #add callback for start
+            dpg.add_button(label="  F5\nStart\nGame", tag="startButton", width=buttonWidth, height=buttonHeight, callback=start_game_callback) #add callback for start
             dpg.add_spacer(width=spacerGap)   # small gap between buttons
             dpg.add_button(label=" F12\nClear", tag="clearButton", width=buttonWidth, height=buttonHeight, callback=clear_entries)
             # adds text box and utilizes callback to edit netword addr on enter;
@@ -174,7 +260,7 @@ def show_player_entry():
         with dpg.theme_component(dpg.mvAll):
             dpg.add_theme_color(dpg.mvThemeCol_WindowBg, (0, 0, 0))
     dpg.bind_item_theme(teamWindow, windowTheme)
-            
+    
 # network callbacks to broadcast equip id 
 # && change network addr
 def equipment_added_callback (sender, new_val):
@@ -182,6 +268,7 @@ def equipment_added_callback (sender, new_val):
 
     # broadcast player added event
     # (sendto() is a method in socket, imported in network)
+    # print(f"Sending code {equip_id_str} to {network.broadcast_addr_port}") <-- test print statement
     network.broadcast_sock.sendto(str.encode(equip_id_str), network.broadcast_addr_port)
 
 def network_change_callback (sender, new_addr):
@@ -190,7 +277,7 @@ def network_change_callback (sender, new_addr):
 
 # Initialize DearPyGui, create the UI, and start the render loop.
 def main():
-    #splash_screen()  # Show splash screen first
+    #splash_screen()
 
     dpg.create_context()
     dpg.create_viewport(title="Laser Tag", width=1000, height=640)
@@ -198,15 +285,18 @@ def main():
     dpg.setup_dearpygui()
 
     show_player_entry()
-    resize_team_window()
-
+    #game_screen()   
+    resize_window()
+    resize_game_window()
     dpg.show_viewport()
+
 
     network.start_listening(network.recv_sock, network.incoming_q)
 
     # Manual render loop for dynamic resizing
     while dpg.is_dearpygui_running():
-        resize_team_window() 
+        resize_window()
+        resize_game_window() 
         dpg.render_dearpygui_frame()
 
     dpg.destroy_context()
