@@ -1,4 +1,3 @@
-import dearpygui.dearpygui as dpg
 import python_pg as db
 import pygame
 import network
@@ -8,6 +7,7 @@ import os
 
 # Add third_party folder to Python search path
 sys.path.append(os.path.join(os.path.dirname(__file__), "third_party"))
+import dearpygui.dearpygui as dpg
 
 tableWidth = 450
 tableHeight = 410
@@ -262,3 +262,4 @@ def main():
 if __name__ == "__main__":
 
     main()
+
