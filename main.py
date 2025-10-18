@@ -4,6 +4,10 @@ import pygame
 import network
 import time
 import sys
+import os
+
+# Add third_party folder to Python search path
+sys.path.append(os.path.join(os.path.dirname(__file__), "third_party"))
 
 tableWidth = 450
 tableHeight = 410
@@ -256,4 +260,5 @@ def main():
     dpg.destroy_context()
 
 if __name__ == "__main__":
+
     main()
