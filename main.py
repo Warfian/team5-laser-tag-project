@@ -29,6 +29,7 @@ def add_to_db(sender, app_data, user_data):
         entry_book[user_data] = data
 
         # Make sure everything looks good
+        print("Entries Currently Awaiting Pairs:")
         print(entry_book)
         return
     
@@ -46,6 +47,26 @@ def add_to_db(sender, app_data, user_data):
 
     # Remove the Entry from the Entry Book
     entry_book.pop(user_data)
+
+#__Sprint 3 Changes__
+# This function calls the entire database into a dictionary that can be updated for various purposes
+# Player Table is a dictionary that will store player info in a list, where the key is the player ID
+player_table = {}
+def retrieve_db():
+
+    # Call the current database table and make sure the table has some elements
+    db_list = db.retrieve_table()
+    if len(db_list) == 0:
+        return print("The database is empty!")
+    
+    # Add the player ID as a key, then iterate through the current tuple.
+    # Tuple contents will be added into a list to be mutable.
+    # For now, since there is only 1 other field, there is no further logic needed.
+    for i in range(len(db_list)):
+        player_table[db_list[i][0]] = [db_list[i][1]]
+
+    print(player_table)
+
 #__End Changes__
 
 # Reset all Red/Green team input fields back to default values.
@@ -177,6 +198,9 @@ def main():
 
     dpg.show_viewport()
 
+    # Retrieve the database in its current form on startup
+    retrieve_db()
+
     # Manual render loop for dynamic resizing
     while dpg.is_dearpygui_running():
         resize_team_window() 
@@ -187,8 +211,6 @@ def main():
 
     dpg.destroy_context()
 
-    #Cole Added 
-    db.disconnect()
 
 if __name__ == "__main__":
     main()
