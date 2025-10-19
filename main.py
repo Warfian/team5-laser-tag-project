@@ -210,7 +210,7 @@ def main():
         
 
     dpg.destroy_context()
-
+    db.disconnect()
 
 if __name__ == "__main__":
     main()
