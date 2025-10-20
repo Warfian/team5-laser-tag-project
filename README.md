@@ -12,9 +12,12 @@ FortyFathom    -->  Jordan Wood
 - Stores player ID and code name into database when ENTER is pressed in text box
 - Broadcasts equipment ID through UDP when ENTER is pressed in text box
 - Ability to change broadcast network address
+- Button to clear names in player entry table
+- Button to start game, which takes user into play action display
+- 6 minute timer in play action display which starts 30 after entering
 
 **How to Run:**
 1. Download contents of main github folder into local directory.
 2. In a terminal that's in the local directory, type "chmod +x install.sh" to make the install script executable.
-3. Execute install script by typing "./install.sh" (NOTE: The DearPyGUI install in the script will take a while (5ish minutes)).
+3. Execute install script by typing "./install.sh".
 4. The program will start automatically once everything is installed. If you need to run it again after install, type either "make" to run the makefile or type "python3 main.py" to run directly.
