@@ -39,7 +39,7 @@ def add(id, name):
     conn.commit()
 
     # Fetch and display data from the table
-    print(f"Successfully addded to databse! Currently in table:")
+    print(f"Successfully addded to database! Currently in table:")
     cursor.execute("SELECT * FROM players;")
     rows = cursor.fetchall()
     for row in rows:
