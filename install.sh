@@ -9,7 +9,6 @@ sudo apt install -y libxinerama-dev
 sudo apt install -y python3-pip
 
 echo "Using pip to install modules needed for program..."
-pip install git+https://github.com/hoffstadt/DearPyGui.git
 pip install psycopg2-binary
 pip install pygame
 

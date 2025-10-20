@@ -1,16 +1,26 @@
-import dearpygui.dearpygui as dpg
 import python_pg as db
 import pygame
 import network
 import time
 import sys
+import os
+
+# Add third_party folder to Python search path
+sys.path.append(os.path.join(os.path.dirname(__file__), "third_party"))
+import dearpygui.dearpygui as dpg
+
+from gamescreen import game_screen
+from gamescreen import resize_game_window
+from gamescreen import runTimer
 
 tableWidth = 450
 tableHeight = 410
 buttonWidth = 100
 buttonHeight = 100
 spacerGap = 20
+
 entry_book = {}
+player_table = {}
 
 # Callback function to add to db
 # Since ID must be paired, with codename, we need to store IDs to be paired with the codename
@@ -30,6 +40,7 @@ def add_to_db(sender, app_data, user_data):
         entry_book[user_data] = data
 
         # Make sure everything looks good
+        print("Entries Currently Awaiting Pairs:")
         print(entry_book)
         return
     
@@ -47,6 +58,22 @@ def add_to_db(sender, app_data, user_data):
 
     # Remove the Entry from the Entry Book
     entry_book.pop(user_data)
+
+# This function calls the entire database into a dictionary that can be updated for various purposes
+# Player Table is a dictionary that will store player info in a list, where the key is the player ID
+def retrieve_db():
+    # Call the current database table and make sure the table has some elements
+    db_list = db.retrieve_table()
+    if len(db_list) == 0:
+        return print("The database is empty!")
+    
+    # Add the player ID as a key, then iterate through the current tuple.
+    # Tuple contents will be added into a list to be mutable.
+    # For now, since there is only 1 other field, there is no further logic needed.
+    for i in range(len(db_list)):
+        player_table[db_list[i][0]] = [db_list[i][1]]
+
+    print(player_table)
 
 def splash_screen():
     pygame.init()
@@ -102,24 +129,65 @@ def clear_entries():
 
 
 # Adjust size and position of the team window, tables, and buttons whenever the viewport is resized.
-def resize_team_window(*_):
+def resize_window(*_):
     view_width = dpg.get_viewport_client_width()
     view_height = dpg.get_viewport_client_height()
 
-    # Resize main window to fit viewport
-    dpg.set_item_width("team_window", view_width )
-    dpg.set_item_height("team_window", view_height)
+    # Resize team_window
+    if dpg.does_item_exist("team_window"):
+        dpg.set_item_width("team_window", view_width)
+        dpg.set_item_height("team_window", view_height)
 
-    # Center the tables
-    total_table_width = tableWidth * 2 + 20
-    left_table_spacer = max((view_width - total_table_width) // 2, 0)
-    dpg.set_item_pos("tables_group", (left_table_spacer, 50))
+        if dpg.does_item_exist("tables_group") and dpg.does_item_exist("buttons_group"):
+            total_table_width = tableWidth * 2 + 20
+            left_table_spacer = max((view_width - total_table_width) // 2, 0)
+            dpg.set_item_pos("tables_group", (left_table_spacer, 50))
 
-    # Center the buttons under the tables
-    total_buttons_width = buttonWidth * 2 + spacerGap
-    buttons_x = max((view_width - total_buttons_width) // 2, 0)
-    buttons_y = tableHeight + 70  
-    dpg.set_item_pos("buttons_group", (buttons_x, buttons_y))
+            total_buttons_width = buttonWidth * 2 + spacerGap
+            buttons_x = max((view_width - total_buttons_width) // 2, 0)
+            buttons_y = tableHeight + 70
+            dpg.set_item_pos("buttons_group", (buttons_x, buttons_y))
+
+def start_game_callback():
+    # Capture values from entry screen
+    red_players = {}
+    green_players = {}
+    for i in range(15):
+        if dpg.does_item_exist(f"red_code_{i}") and dpg.does_item_exist(f"red_equip_{i}"):
+            code = dpg.get_value(f"red_code_{i}")
+            equip = dpg.get_value(f"red_equip_{i}")
+            if code and code.strip():
+                red_players[equip] = {"name": code.strip(), "score": 0}
+
+        if dpg.does_item_exist(f"green_code_{i}") and dpg.does_item_exist(f"green_equip_{i}"):
+            code = dpg.get_value(f"green_code_{i}")
+            equip = dpg.get_value(f"green_equip_{i}")
+            if code and code.strip():
+                green_players[equip] = {"name": code.strip(), "score": 0}
+
+    # print("DEBUG BEFORE GAME SCREEN:")
+    # print("RED PLAYERS:", red_players)
+    # print("GREEN PLAYERS:", green_players)
+
+    #Call the screen and pass players
+    game_screen(red_players, green_players)
+
+def validate_equip_id(sender, app_data):
+    tag = sender
+    team = "red" if "red" in tag else "green"
+
+    is_valid = (
+        (team == "red" and app_data % 2 != 0) or
+        (team == "green" and app_data % 2 == 0)
+    )
+
+    if not is_valid:
+        dpg.set_value(sender, 0)
+        print(f" Invalid ID {app_data} for {team.title()} Team")
+        return
+
+    # now call 
+    equipment_added_callback(sender, app_data)
 
 def show_player_entry():
     with dpg.window(tag="team_window", label="Teams",no_title_bar=True, no_move=True, no_resize=True, no_scrollbar=True) as teamWindow:
@@ -142,7 +210,7 @@ def show_player_entry():
                             # Add callback, user_data, and on_enter to red_equip to broadcast equipment id
                             dpg.add_input_int(tag=f"red_id_{i}", width=80, step=0, step_fast=0, callback=add_to_db, user_data=i, on_enter=True)
                             dpg.add_input_text(tag=f"red_code_{i}", width=120, callback=add_to_db, user_data=i, on_enter=True)
-                            dpg.add_input_int(tag=f"red_equip_{i}", width=100, step=0, step_fast=0, callback=equipment_added_callback, on_enter=True)
+                            dpg.add_input_int(tag=f"red_equip_{i}", width=100, step=0, step_fast=0, on_enter=True, callback=validate_equip_id)
                 # Red Team Theme
                 with dpg.theme() as redTheme:
                     with dpg.theme_component(dpg.mvAll):
@@ -178,7 +246,7 @@ def show_player_entry():
                             # Add callback, user_data, and on_enter to green_equip to broadcast equipment id
                             dpg.add_input_int(tag=f"green_id_{i}", width=80, step=0, step_fast=0, callback=add_to_db, user_data=i, on_enter=True)
                             dpg.add_input_text(tag=f"green_code_{i}", width=120, callback=add_to_db, user_data=i, on_enter=True)
-                            dpg.add_input_int(tag=f"green_equip_{i}", width=100, step=0, step_fast=0, callback=equipment_added_callback, on_enter=True)
+                            dpg.add_input_int(tag=f"green_equip_{i}", width=100, step=0, step_fast=0, on_enter=True, callback=validate_equip_id)
                 
                 # Green Team Theme
                 with dpg.theme() as greenTheme:
@@ -196,7 +264,7 @@ def show_player_entry():
                 dpg.bind_item_theme(greenTeam, greenTheme)
         # Buttons and Shortcuts
         with dpg.group(tag="buttons_group", horizontal=True):
-            dpg.add_button(label="  F5\nStart\nGame", tag="startButton", width=buttonWidth, height=buttonHeight) #add callback for start
+            dpg.add_button(label="  F5\nStart\nGame", tag="startButton", width=buttonWidth, height=buttonHeight, callback=start_game_callback) #add callback for start
             dpg.add_spacer(width=spacerGap)   # small gap between buttons
             dpg.add_button(label=" F12\nClear", tag="clearButton", width=buttonWidth, height=buttonHeight, callback=clear_entries)
             # adds text box and utilizes callback to edit netword addr on enter;
@@ -217,7 +285,7 @@ def show_player_entry():
         with dpg.theme_component(dpg.mvAll):
             dpg.add_theme_color(dpg.mvThemeCol_WindowBg, (0, 0, 0))
     dpg.bind_item_theme(teamWindow, windowTheme)
-            
+
 # network callbacks to broadcast equip id 
 # && change network addr
 def equipment_added_callback (sender, new_val):
@@ -242,18 +310,25 @@ def main():
     dpg.setup_dearpygui()
 
     show_player_entry()
-    resize_team_window()
-
+    resize_window()
+    resize_game_window
+    runTimer()
     dpg.show_viewport()
+
+    # Retrieve the database in its current form on startup
+    retrieve_db()
 
     network.start_listening(network.recv_sock, network.incoming_q)
 
     # Manual render loop for dynamic resizing
     while dpg.is_dearpygui_running():
-        resize_team_window() 
+        resize_window()
+        resize_game_window() 
+        runTimer()
         dpg.render_dearpygui_frame()
 
     dpg.destroy_context()
+    db.disconnect()
 
 if __name__ == "__main__":
     main()
