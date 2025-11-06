@@ -1,4 +1,4 @@
-import python_pg as db
+#import python_pg as db
 import pygame
 import network
 import time
@@ -55,26 +55,26 @@ def add_to_db(sender, app_data, user_data):
         name = entry_book[user_data]
 
     # Send both inputs to the database
-    db.add(id, name)
+    #db.add(id, name)
 
     # Remove the Entry from the Entry Book
     entry_book.pop(user_data)
 
 # This function calls the entire database into a dictionary that can be updated for various purposes
 # Player Table is a dictionary that will store player info in a list, where the key is the player ID
-def retrieve_db():
-    # Call the current database table and make sure the table has some elements
-    db_list = db.retrieve_table()
-    if len(db_list) == 0:
-        return print("The database is empty!")
+# def retrieve_db():
+#     # Call the current database table and make sure the table has some elements
+#     db_list = db.retrieve_table()
+#     if len(db_list) == 0:
+#         return print("The database is empty!")
     
-    # Add the player ID as a key, then iterate through the current tuple.
-    # Tuple contents will be added into a list to be mutable.
-    # For now, since there is only 1 other field, there is no further logic needed.
-    for i in range(len(db_list)):
-        player_table[db_list[i][0]] = [db_list[i][1]]
+#     # Add the player ID as a key, then iterate through the current tuple.
+#     # Tuple contents will be added into a list to be mutable.
+#     # For now, since there is only 1 other field, there is no further logic needed.
+#     for i in range(len(db_list)):
+#         player_table[db_list[i][0]] = [db_list[i][1]]
 
-    print(player_table)
+#     print(player_table)
 
 def splash_screen():
     pygame.init()
@@ -111,6 +111,28 @@ def splash_screen():
                 sys.exit()
 
     pygame.quit()
+
+def start_test_game_with_base_hits():
+    from gamescreen import (
+        red_players, green_players, base_hit_players,
+        game_screen, handle_base_hit, handle_score_event
+    )
+
+    for i in range(1, 16):
+        red_players[i] = {"name": f"Red_{i}", "score": 0}
+
+    for i in range(1, 16):
+        green_players[i + 100] = {"name": f"Green_{i}", "score": 0}
+
+    handle_base_hit("red", 102)
+    handle_base_hit("green", 5)
+
+    handle_score_event(10, "sub")
+    handle_score_event(110, "sub")
+    handle_score_event(15, "add")
+    handle_score_event(115, "add")
+
+    game_screen(red_players, green_players)
 
 # Reset all Red/Green team input fields back to default values.
 # Triggered by the 'Clear' button or F12 key. 
@@ -300,21 +322,22 @@ def show_player_entry():
 
 
 def main():
-    splash_screen()
+    #splash_screen()
 
     dpg.create_context()
     dpg.create_viewport(title="Laser Tag", width=1000, height=640)
     dpg.set_viewport_small_icon("table_logo.ico")
     dpg.setup_dearpygui()
 
-    show_player_entry()
+    start_test_game_with_base_hits()
+    #show_player_entry()
     resize_window()
     resize_game_window()
     runTimer()
     dpg.show_viewport()
 
     # Retrieve the database in its current form on startup
-    retrieve_db()
+    #retrieve_db()
 
     network.start_listening(network.recv_sock, network.incoming_q)
 
@@ -326,7 +349,7 @@ def main():
         dpg.render_dearpygui_frame()
 
     dpg.destroy_context()
-    db.disconnect()
+    #db.disconnect()
 
 if __name__ == "__main__":
     main()

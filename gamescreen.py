@@ -1,6 +1,7 @@
 import dearpygui.dearpygui as dpg
 import time
 from PIL import Image
+import music
 
 # Layout Constants
 spacerGap = 20
@@ -12,6 +13,7 @@ timerHeight = 40
 
 # Global state
 startTime = None
+musicStarted = False
 started = False
 warned = False
 gameDuration = 6 * 60
@@ -196,7 +198,7 @@ def game_screen(red_data, green_data):
 # Update Timer
 def runTimer():
     #print("RUNNING TIMER")
-    global startTime, warned, started
+    global startTime, warned, started, musicStarted
 
     if startTime is None or not dpg.does_item_exist("timer_text"):
         #print("AAAAHHH NO TIMER")
@@ -209,6 +211,10 @@ def runTimer():
         if remaining > 0:
             minutes = remaining // 60
             seconds = remaining % 60
+            # DAN ADDITION: Adding call to music function so that it's properly timed
+            if (seconds == 17 and not musicStarted):
+                music.play_music()
+                musicStarted = True
             dpg.set_value("timer_text", f"Starting in: {minutes:02d}:{seconds:02d}")
         else:
             warned = True
