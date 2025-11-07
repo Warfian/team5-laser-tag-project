@@ -1,5 +1,5 @@
-import psycopg2
-from psycopg2 import sql
+# import psycopg2
+# from psycopg2 import sql
 
 #main.py is our entry table
 import main
