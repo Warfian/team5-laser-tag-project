@@ -243,3 +243,14 @@ def runTimer():
             green_score = sum(player["score"] for player in green_players.values())
             dpg.set_value("green_team_score_text", f"Green Team: {green_score}")
 
+        for equip_id, player in red_players.items():
+            tag = f"red_score_{equip_id}"
+            if dpg.does_item_exist(tag):
+                dpg.set_value(tag, f"{player['name']:<10} {player['score']}")
+
+        for equip_id, player in green_players.items():
+            tag = f"green_score_{equip_id}"
+            if dpg.does_item_exist(tag):
+                dpg.set_value(tag, f"{player['name']:<10} {player['score']}")
+
+
