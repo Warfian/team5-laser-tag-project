@@ -9,9 +9,9 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), "third_party"))
 import dearpygui.dearpygui as dpg
 
-from gamescreen import game_screen
 from gamescreen import resize_game_window
 from gamescreen import runTimer
+from gamescreen import run_pregame_timer
 
 # Layout Constants
 tableWidth = 450
@@ -111,7 +111,7 @@ def splash_screen():
                 sys.exit()
 
     pygame.quit()
-    
+
 # Reset all Red/Green team input fields back to default values.
 # Triggered by the 'Clear' button or F12 key. 
 def clear_entries():
@@ -166,8 +166,9 @@ def start_game_callback():
     # print("RED PLAYERS:", red_players)
     # print("GREEN PLAYERS:", green_players)
 
-    #Call the screen and pass players
-    game_screen(red_players, green_players)
+     # Now run the pregame timer
+    dpg.delete_item("team_window") 
+    run_pregame_timer(red_players, green_players)
 
 def validate_equip_id(sender, app_data):
     tag = sender
@@ -186,6 +187,8 @@ def validate_equip_id(sender, app_data):
     # now call 
     equipment_added_callback(sender, app_data)
 
+# network callbacks to broadcast equip id 
+# && change network addr
 # network callbacks to broadcast equip id 
 # && change network addr
 def equipment_added_callback (sender, new_val):
@@ -316,6 +319,7 @@ def main():
     # Retrieve the database in its current form on startup
     retrieve_db()
 
+    network.main()
     network.start_listening(network.recv_sock, network.incoming_q)
 
     # Manual render loop for dynamic resizing
