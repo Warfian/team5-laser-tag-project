@@ -11,6 +11,7 @@ sudo apt install -y python3-pip
 echo "Using pip to install modules needed for program..."
 pip install psycopg2-binary
 pip install pygame
+pip install Pillow
 
 echo "Install complete. Running program..."
 make

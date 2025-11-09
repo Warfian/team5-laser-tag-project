@@ -7,7 +7,7 @@ def play_music():
 
     # Generate random number to randomly select one of 8 tracks
     randNum = randint(1, 8)
-    print(randNum)
+    #print(randNum)
     musicTrack = f"photon_tracks/Track0{randNum}.mp3"
 
     # Play music track
