@@ -103,7 +103,7 @@ def game_screen(red_data, green_data):
     
     # Define font locally and apply it only to the game screen
     with dpg.font_registry():
-        game_font = dpg.add_font("consola.ttf", 20)
+        game_font = dpg.add_font("CONSOLA.TTF", 20)
     # note from j.t. - we can't use absolute paths from our local machines in the VM,
     # but we can put any .ttf we like in the repo and just reference it directly here.
         
