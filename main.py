@@ -10,10 +10,28 @@ buttonHeight = 100
 spacerGap = 20
 
 # __Cole's Changes__
+
+# This function calls the entire database into a dictionary that can be updated for various purposes
+# Player Table is a dictionary that will store player info in a list, where the key is the player ID
+player_table = {}
+def retrieve_db():
+
+    # Call the current database table and make sure the table has some elements
+    db_list = db.retrieve_table()
+    if len(db_list) == 0:
+        return print("The database is empty!")
+    
+    # Add the player ID as a key, then iterate through the current tuple.
+    # Tuple contents will be added into a list to be mutable.
+    # For now, since there is only 1 other field, there is no further logic needed.
+    for i in range(len(db_list)):
+        player_table[db_list[i][0]] = db_list[i][1]
+
 # Callback function to add to db
 # Since ID must be paired, with codename, we need to store IDs to be paired with the codename
 entry_book = {}
 def add_to_db(sender, app_data, user_data):
+
     # Extract the user input from the input field and prep SQL input fields
     data = dpg.get_value(sender)
     id = 0
@@ -22,6 +40,19 @@ def add_to_db(sender, app_data, user_data):
     # Add an arbitrary value to the green table listing to prevent overlap with Entry Book keys
     if "green" in sender:
         user_data += 20
+
+    # Check the current version of the database to see if the user is returning
+    if "id" in sender and data in player_table:
+        for i in range(15):
+            if str(i) in sender:
+                if "red" in sender:
+                    dpg.set_value(f"red_code_{i}", player_table[data])
+                else:
+                    dpg.set_value(f"green_code_{i}", player_table[data])
+
+        # Update player table
+        retrieve_db()
+        return
 
     # If the table does not have an ID-name pair, store the given data in a dictionary for later.
     if user_data not in entry_book.keys():
@@ -47,25 +78,7 @@ def add_to_db(sender, app_data, user_data):
 
     # Remove the Entry from the Entry Book
     entry_book.pop(user_data)
-
-#__Sprint 3 Changes__
-# This function calls the entire database into a dictionary that can be updated for various purposes
-# Player Table is a dictionary that will store player info in a list, where the key is the player ID
-player_table = {}
-def retrieve_db():
-
-    # Call the current database table and make sure the table has some elements
-    db_list = db.retrieve_table()
-    if len(db_list) == 0:
-        return print("The database is empty!")
-    
-    # Add the player ID as a key, then iterate through the current tuple.
-    # Tuple contents will be added into a list to be mutable.
-    # For now, since there is only 1 other field, there is no further logic needed.
-    for i in range(len(db_list)):
-        player_table[db_list[i][0]] = [db_list[i][1]]
-
-    print(player_table)
+    retrieve_db()
 
 #__End Changes__
 
@@ -198,7 +211,6 @@ def main():
 
     dpg.show_viewport()
 
-    # Retrieve the database in its current form on startup
     retrieve_db()
 
     # Manual render loop for dynamic resizing
@@ -206,11 +218,8 @@ def main():
         resize_team_window() 
         dpg.render_dearpygui_frame()
 
-
-        
-
-    dpg.destroy_context()
     db.disconnect()
+    dpg.destroy_context()
 
 if __name__ == "__main__":
     main()
