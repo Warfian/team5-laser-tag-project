@@ -307,7 +307,7 @@ def show_player_entry():
             dpg.bind_item_theme("network_box", networkTheme)
         
         with dpg.handler_registry():
-            dpg.add_key_press_handler(dpg.mvKey_F5, start_game_callback) #add callback for start
+            dpg.add_key_press_handler(dpg.mvKey_F5, callback=start_game_callback) #add callback for start
             dpg.add_key_press_handler(dpg.mvKey_F12, callback=clear_entries)
     
     with dpg.theme() as windowTheme:
