@@ -222,6 +222,8 @@ def run_pregame_timer(red_players, green_players):
 
     pygame.display.quit()
 
+    network.broadcast_game_start()
+
     game_screen(red_players, green_players)
 
 def runTimer():
@@ -238,8 +240,6 @@ def runTimer():
         network.broadcast_game_end()
         started = False
         return
-    else:
-        network.broadcast_game_start()
     minutes = remaining // 60
     seconds = remaining % 60
     dpg.set_value("timer_text", f"{minutes:02d}:{seconds:02d}")

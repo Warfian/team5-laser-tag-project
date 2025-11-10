@@ -10,6 +10,7 @@ import threading
 import queue
 import time
 import gamescreen
+import music
 
 BROADCAST_PORT = 7500
 RECEIVE_PORT   = 7501
@@ -84,6 +85,7 @@ def process_messages(q):
             if player_is_green:
                 broadcast_sock.sendto(str.encode(target_id), broadcast_addr_port)
                 gamescreen.handle_base_hit("red", sender_id_num)
+            music.play_base()
         
         elif target_id_num == 43:
             # base score (green)
@@ -91,17 +93,21 @@ def process_messages(q):
             if player_is_red:
                 broadcast_sock.sendto(str.encode(target_id), broadcast_addr_port)
                 gamescreen.handle_base_hit("green", sender_id_num)
+            music.play_base()
         
         elif even_sum: 
             # friendly fire
+            broadcast_sock.sendto(str.encode(sender_id), broadcast_addr_port)
             broadcast_sock.sendto(str.encode(target_id), broadcast_addr_port)
             gamescreen.handle_score_event(sender_id_num, "sub")
             gamescreen.handle_score_event(target_id_num, "sub")
+            music.play_friendly_fire()
         
         elif not even_sum:
             # unfriendly fire
             broadcast_sock.sendto(str.encode(target_id), broadcast_addr_port)
             gamescreen.handle_score_event(sender_id_num, "add")
+            music.play_hit()
         
         else: 
             pass
