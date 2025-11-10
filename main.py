@@ -9,10 +9,11 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), "third_party"))
 import dearpygui.dearpygui as dpg
 
-from gamescreen import game_screen
 from gamescreen import resize_game_window
 from gamescreen import runTimer
+from gamescreen import run_pregame_timer
 
+# Layout Constants
 tableWidth = 450
 tableHeight = 410
 buttonWidth = 100
@@ -22,9 +23,27 @@ spacerGap = 20
 entry_book = {}
 player_table = {}
 
+# This function calls the entire database into a dictionary that can be updated for various purposes
+# Player Table is a dictionary that will store player info in a list, where the key is the player ID
+player_table = {}
+def retrieve_db():
+
+    # Call the current database table and make sure the table has some elements
+    db_list = db.retrieve_table()
+    if len(db_list) == 0:
+        return print("The database is empty!")
+    
+    # Add the player ID as a key, then iterate through the current tuple.
+    # Tuple contents will be added into a list to be mutable.
+    # For now, since there is only 1 other field, there is no further logic needed.
+    for i in range(len(db_list)):
+        player_table[db_list[i][0]] = db_list[i][1]
+
 # Callback function to add to db
 # Since ID must be paired, with codename, we need to store IDs to be paired with the codename
+entry_book = {}
 def add_to_db(sender, app_data, user_data):
+
     # Extract the user input from the input field and prep SQL input fields
     data = dpg.get_value(sender)
     id = 0
@@ -33,6 +52,19 @@ def add_to_db(sender, app_data, user_data):
     # Add an arbitrary value to the green table listing to prevent overlap with Entry Book keys
     if "green" in sender:
         user_data += 20
+
+    # Check the current version of the database to see if the user is returning
+    if "id" in sender and data in player_table:
+        for i in range(15):
+            if str(i) in sender:
+                if "red" in sender:
+                    dpg.set_value(f"red_code_{i}", player_table[data])
+                else:
+                    dpg.set_value(f"green_code_{i}", player_table[data])
+
+        # Update player table
+        retrieve_db()
+        return
 
     # If the table does not have an ID-name pair, store the given data in a dictionary for later.
     if user_data not in entry_book.keys():
@@ -58,26 +90,10 @@ def add_to_db(sender, app_data, user_data):
 
     # Remove the Entry from the Entry Book
     entry_book.pop(user_data)
-
-# This function calls the entire database into a dictionary that can be updated for various purposes
-# Player Table is a dictionary that will store player info in a list, where the key is the player ID
-def retrieve_db():
-    # Call the current database table and make sure the table has some elements
-    db_list = db.retrieve_table()
-    if len(db_list) == 0:
-        return print("The database is empty!")
-    
-    # Add the player ID as a key, then iterate through the current tuple.
-    # Tuple contents will be added into a list to be mutable.
-    # For now, since there is only 1 other field, there is no further logic needed.
-    for i in range(len(db_list)):
-        player_table[db_list[i][0]] = [db_list[i][1]]
-
-    print(player_table)
+    retrieve_db()
 
 def splash_screen():
     pygame.init()
-
     # Match your planned DPG size
     width, height = 1000, 640
     screen = pygame.display.set_mode((width, height))
@@ -98,7 +114,6 @@ def splash_screen():
 
     logo = pygame.transform.smoothscale(logo, (940, 600))
     logorect = logo.get_rect()
-
     screen.fill((0, 0, 0))  # black background
     logorect.center = (width // 2, height // 2 - 20)
     screen.blit(logo, logorect)
@@ -127,8 +142,6 @@ def clear_entries():
         dpg.set_value(f"green_code_{i}", "")
         dpg.set_value(f"green_equip_{i}", 0)
 
-
-# Adjust size and position of the team window, tables, and buttons whenever the viewport is resized.
 def resize_window(*_):
     view_width = dpg.get_viewport_client_width()
     view_height = dpg.get_viewport_client_height()
@@ -152,6 +165,7 @@ def start_game_callback():
     # Capture values from entry screen
     red_players = {}
     green_players = {}
+
     for i in range(15):
         if dpg.does_item_exist(f"red_code_{i}") and dpg.does_item_exist(f"red_equip_{i}"):
             code = dpg.get_value(f"red_code_{i}")
@@ -165,12 +179,12 @@ def start_game_callback():
             if code and code.strip():
                 green_players[equip] = {"name": code.strip(), "score": 0}
 
-    # print("DEBUG BEFORE GAME SCREEN:")
     # print("RED PLAYERS:", red_players)
     # print("GREEN PLAYERS:", green_players)
 
-    #Call the screen and pass players
-    game_screen(red_players, green_players)
+     # Now run the pregame timer
+    dpg.delete_item("team_window") 
+    run_pregame_timer(red_players, green_players)
 
 def validate_equip_id(sender, app_data):
     tag = sender
@@ -189,6 +203,20 @@ def validate_equip_id(sender, app_data):
     # now call 
     equipment_added_callback(sender, app_data)
 
+# network callbacks to broadcast equip id 
+# && change network addr
+def equipment_added_callback (sender, new_val):
+    equip_id_str = str(new_val)
+
+    # broadcast player added event
+    # (sendto() is a method in socket, imported in network)
+    # print(f"Sending code {equip_id_str} to {network.broadcast_addr_port}") <-- test print statement
+    network.broadcast_sock.sendto(str.encode(equip_id_str), network.broadcast_addr_port)
+
+def network_change_callback (sender, new_addr):
+    network.change_broadcast_ip (new_addr)
+    network.broadcast_sock, network.broadcast_addr_port = network.setup_broadcast_socket(network.broadcast_addr, network.BROADCAST_PORT)
+
 def show_player_entry():
     with dpg.window(tag="team_window", label="Teams",no_title_bar=True, no_move=True, no_resize=True, no_scrollbar=True) as teamWindow:
         with dpg.group(tag= "tables_group", horizontal=True):  # Side-by-side layout
@@ -205,7 +233,6 @@ def show_player_entry():
                     for i in range(15):
                         with dpg.table_row():
                             dpg.add_text(f"Player {i + 1}")
-
                             # Add callback, user_data, and on_enter to red_id and red_code to add to db
                             # Add callback, user_data, and on_enter to red_equip to broadcast equipment id
                             dpg.add_input_int(tag=f"red_id_{i}", width=80, step=0, step_fast=0, callback=add_to_db, user_data=i, on_enter=True)
@@ -241,7 +268,6 @@ def show_player_entry():
                     for i in range(15):
                         with dpg.table_row():
                             dpg.add_text(f"Player {i + 1}")
-
                             # Add callback, user_data, and on_enter to green_id and green_code to add to db
                             # Add callback, user_data, and on_enter to green_equip to broadcast equipment id
                             dpg.add_input_int(tag=f"green_id_{i}", width=80, step=0, step_fast=0, callback=add_to_db, user_data=i, on_enter=True)
@@ -264,7 +290,7 @@ def show_player_entry():
                 dpg.bind_item_theme(greenTeam, greenTheme)
         # Buttons and Shortcuts
         with dpg.group(tag="buttons_group", horizontal=True):
-            dpg.add_button(label="  F5\nStart\nGame", tag="startButton", width=buttonWidth, height=buttonHeight, callback=start_game_callback) #add callback for start
+            dpg.add_button(label="  F5\nStart\nGame", tag="startButton", width=buttonWidth, height=buttonHeight, callback=start_game_callback)
             dpg.add_spacer(width=spacerGap)   # small gap between buttons
             dpg.add_button(label=" F12\nClear", tag="clearButton", width=buttonWidth, height=buttonHeight, callback=clear_entries)
             # adds text box and utilizes callback to edit netword addr on enter;
@@ -273,34 +299,23 @@ def show_player_entry():
             with dpg.child_window(tag="network_box", width=150, height=buttonHeight, border=True):
                 dpg.add_text("Network Address")
                 dpg.add_input_text(tag="network_address", default_value="127.0.0.1", callback=network_change_callback, on_enter=True, width=120)
+            
             with dpg.theme() as networkTheme:
                 with dpg.theme_component(dpg.mvAll):
                     dpg.add_theme_color(dpg.mvThemeCol_ChildBg, (0, 0, 0, 0))   # dark gray background
                     dpg.add_theme_color(dpg.mvThemeCol_Border, (0, 0, 0, 0)) # light gray border
             dpg.bind_item_theme("network_box", networkTheme)
+        
         with dpg.handler_registry():
-            dpg.add_key_press_handler(dpg.mvKey_F5) #add callback for start
+            dpg.add_key_press_handler(dpg.mvKey_F5, callback=start_game_callback) #add callback for start
             dpg.add_key_press_handler(dpg.mvKey_F12, callback=clear_entries)
+    
     with dpg.theme() as windowTheme:
         with dpg.theme_component(dpg.mvAll):
             dpg.add_theme_color(dpg.mvThemeCol_WindowBg, (0, 0, 0))
     dpg.bind_item_theme(teamWindow, windowTheme)
 
-# network callbacks to broadcast equip id 
-# && change network addr
-def equipment_added_callback (sender, new_val):
-    equip_id_str = str(new_val)
 
-    # broadcast player added event
-    # (sendto() is a method in socket, imported in network)
-    # print(f"Sending code {equip_id_str} to {network.broadcast_addr_port}") <-- test print statement
-    network.broadcast_sock.sendto(str.encode(equip_id_str), network.broadcast_addr_port)
-
-def network_change_callback (sender, new_addr):
-    network.change_broadcast_ip (new_addr)
-    network.broadcast_sock, network.broadcast_addr_port = network.setup_broadcast_socket(network.broadcast_addr, network.BROADCAST_PORT)
-
-# Initialize DearPyGui, create the UI, and start the render loop.
 def main():
     splash_screen()
 
@@ -311,13 +326,14 @@ def main():
 
     show_player_entry()
     resize_window()
-    resize_game_window
+    resize_game_window()
     runTimer()
     dpg.show_viewport()
 
     # Retrieve the database in its current form on startup
     retrieve_db()
 
+    network.main()
     network.start_listening(network.recv_sock, network.incoming_q)
 
     # Manual render loop for dynamic resizing
