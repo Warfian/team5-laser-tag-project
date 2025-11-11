@@ -1,3 +1,5 @@
+#import dearpygui.dearpygui as dpg
+sys.path.append(os.path.join(os.path.dirname(__file__), "third_party"))
 import dearpygui.dearpygui as dpg
 import time
 from PIL import Image
@@ -5,6 +7,7 @@ import network
 import music
 import pygame
 import sys
+import os
 
 # Layout Constants
 spacerGap = 20
