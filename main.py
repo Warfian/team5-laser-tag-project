@@ -23,9 +23,27 @@ spacerGap = 20
 entry_book = {}
 player_table = {}
 
+# This function calls the entire database into a dictionary that can be updated for various purposes
+# Player Table is a dictionary that will store player info in a list, where the key is the player ID
+player_table = {}
+def retrieve_db():
+
+    # Call the current database table and make sure the table has some elements
+    db_list = db.retrieve_table()
+    if len(db_list) == 0:
+        return print("The database is empty!")
+    
+    # Add the player ID as a key, then iterate through the current tuple.
+    # Tuple contents will be added into a list to be mutable.
+    # For now, since there is only 1 other field, there is no further logic needed.
+    for i in range(len(db_list)):
+        player_table[db_list[i][0]] = db_list[i][1]
+
 # Callback function to add to db
 # Since ID must be paired, with codename, we need to store IDs to be paired with the codename
+entry_book = {}
 def add_to_db(sender, app_data, user_data):
+
     # Extract the user input from the input field and prep SQL input fields
     data = dpg.get_value(sender)
     id = 0
@@ -34,6 +52,19 @@ def add_to_db(sender, app_data, user_data):
     # Add an arbitrary value to the green table listing to prevent overlap with Entry Book keys
     if "green" in sender:
         user_data += 20
+
+    # Check the current version of the database to see if the user is returning
+    if "id" in sender and data in player_table:
+        for i in range(15):
+            if str(i) in sender:
+                if "red" in sender:
+                    dpg.set_value(f"red_code_{i}", player_table[data])
+                else:
+                    dpg.set_value(f"green_code_{i}", player_table[data])
+
+        # Update player table
+        # retrieve_db()
+        return
 
     # If the table does not have an ID-name pair, store the given data in a dictionary for later.
     if user_data not in entry_book.keys():
@@ -55,26 +86,11 @@ def add_to_db(sender, app_data, user_data):
         name = entry_book[user_data]
 
     # Send both inputs to the database
-    db.add(id, name)
+    #db.add(id, name)
 
     # Remove the Entry from the Entry Book
     entry_book.pop(user_data)
-
-# This function calls the entire database into a dictionary that can be updated for various purposes
-# Player Table is a dictionary that will store player info in a list, where the key is the player ID
-def retrieve_db():
-    # Call the current database table and make sure the table has some elements
-    db_list = db.retrieve_table()
-    if len(db_list) == 0:
-        return print("The database is empty!")
-    
-    # Add the player ID as a key, then iterate through the current tuple.
-    # Tuple contents will be added into a list to be mutable.
-    # For now, since there is only 1 other field, there is no further logic needed.
-    for i in range(len(db_list)):
-        player_table[db_list[i][0]] = [db_list[i][1]]
-
-    print(player_table)
+    retrieve_db()
 
 def splash_screen():
     pygame.init()
@@ -166,7 +182,7 @@ def start_game_callback():
     # print("RED PLAYERS:", red_players)
     # print("GREEN PLAYERS:", green_players)
 
-     # Now run the pregame timer
+    # Now run the pregame timer
     dpg.delete_item("team_window") 
     run_pregame_timer(red_players, green_players)
 
@@ -187,8 +203,6 @@ def validate_equip_id(sender, app_data):
     # now call 
     equipment_added_callback(sender, app_data)
 
-# network callbacks to broadcast equip id 
-# && change network addr
 # network callbacks to broadcast equip id 
 # && change network addr
 def equipment_added_callback (sender, new_val):
@@ -276,7 +290,7 @@ def show_player_entry():
                 dpg.bind_item_theme(greenTeam, greenTheme)
         # Buttons and Shortcuts
         with dpg.group(tag="buttons_group", horizontal=True):
-            dpg.add_button(label="  F5\nStart\nGame", tag="startButton", width=buttonWidth, height=buttonHeight, callback=start_game_callback) #add callback for start
+            dpg.add_button(label="  F5\nStart\nGame", tag="startButton", width=buttonWidth, height=buttonHeight, callback=start_game_callback)
             dpg.add_spacer(width=spacerGap)   # small gap between buttons
             dpg.add_button(label=" F12\nClear", tag="clearButton", width=buttonWidth, height=buttonHeight, callback=clear_entries)
             # adds text box and utilizes callback to edit netword addr on enter;
@@ -293,7 +307,7 @@ def show_player_entry():
             dpg.bind_item_theme("network_box", networkTheme)
         
         with dpg.handler_registry():
-            dpg.add_key_press_handler(dpg.mvKey_F5) #add callback for start
+            dpg.add_key_press_handler(dpg.mvKey_F5, callback=start_game_callback) #add callback for start
             dpg.add_key_press_handler(dpg.mvKey_F12, callback=clear_entries)
     
     with dpg.theme() as windowTheme:
