@@ -22,8 +22,7 @@ winnerHeight = 410
 startTime = None
 musicStarted = False
 started = False
-#gameDuration = 6 * 60
-gameDuration = 10
+gameDuration = 6 * 60
 
 # Game Data Stores
 red_players = {}
@@ -85,7 +84,7 @@ def resize_game_window():
         dpg.set_item_height("game_screen", view_height)
 
     if dpg.does_item_exist("score_group"):
-        total_table_width = scoreWidth * 2
+        total_table_width = scoreWidth * 3  # Dan-change this for the centering but it should be fine
         center_x = max((view_width - total_table_width) // 2, 0)
         dpg.set_item_pos("score_group", (center_x, scoreTopPadding))
 
@@ -121,13 +120,25 @@ def game_screen(red_data, green_data):
     if not dpg.does_item_exist("game_font"):
         with dpg.font_registry():
             dpg.add_font("CONSOLA.TTF", 20, tag="game_font")
-    # note from j.t. - we can't use absolute paths from our local machines in the VM,
-    # but we can put any .ttf we like in the repo and just reference it directly here.
-        
+     
     with dpg.window(tag="game_screen", no_title_bar=True, no_move=True, no_resize=True, no_scrollbar=True):
         dpg.set_primary_window("game_screen", True)
 
         with dpg.group(tag="score_group", horizontal=True):
+            # Game play (Dan you can change whatever you want just got it set up for you)
+            with dpg.child_window(tag="game_text", width=200, height=400, no_scrollbar=True):
+                dpg.bind_item_font("game_text", "game_font")
+
+                dpg.add_group(tag="game_play_text") # So the runtimer() can update printing text
+            # Theme for the box where the game text will go 
+            with dpg.theme() as game_theme:
+                with dpg.theme_component(dpg.mvAll):
+                    dpg.add_theme_color(dpg.mvThemeCol_ChildBg, (0, 0, 0))
+                    dpg.add_theme_color(dpg.mvThemeCol_Border, (200, 30, 30))
+                    dpg.add_theme_style(dpg.mvStyleVar_ChildBorderSize, 2)
+                    dpg.add_theme_style(dpg.mvStyleVar_ChildRounding, 10)
+            dpg.bind_item_theme("game_text", game_theme)
+            
             # RED TEAM
             with dpg.child_window(tag="red_score", width=scoreWidth, height=scoreHeight, no_scrollbar=True):
                 dpg.bind_item_font("red_score", "game_font")
@@ -296,6 +307,10 @@ def runTimer():
     minutes = remaining // 60
     seconds = remaining % 60
     dpg.set_value("timer_text", f"{minutes:02d}:{seconds:02d}")
+
+    # GAME PLAY TEXT 
+    # if dpg.does_item_exist("game_play_text"):
+        #update text for game play
 
     # Updated Team scores
     if dpg.does_item_exist("red_team_score_text"):
