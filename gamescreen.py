@@ -235,7 +235,7 @@ def game_screen(red_data, green_data):
             dpg.bind_item_theme("green_score", green_theme)
 
         # Game play
-        with dpg.child_window(tag="game_text", width=(scoreWidth * 2), height=(scoreHeight // 4), no_scrollbar=True):
+        with dpg.child_window(tag="game_text", width=((scoreWidth * 2) + 8), height=(scoreHeight // 4), no_scrollbar=True):
             dpg.bind_item_font("game_text", "game_font")
 
         # Theme for the box where the game text will go 
