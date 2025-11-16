@@ -1,6 +1,3 @@
-#import dearpygui.dearpygui as dpg
-sys.path.append(os.path.join(os.path.dirname(__file__), "third_party"))
-import dearpygui.dearpygui as dpg
 import time
 from PIL import Image
 import network
@@ -9,6 +6,9 @@ import pygame
 import sys
 import os
 
+sys.path.append(os.path.join(os.path.dirname(__file__), "third_party"))  # so we can import from parent directory
+import dearpygui.dearpygui as dpg
+
 # Layout Constants
 spacerGap = 20
 scoreHeight = 530
@@ -16,6 +16,10 @@ scoreWidth = 300
 scoreTopPadding = 10
 timerWidth = 100
 timerHeight = 40
+buttonWidth = 100
+buttonHeight = 100
+winnerWidth = 450
+winnerHeight = 410
 
 # Global state
 startTime = None
@@ -74,7 +78,63 @@ def handle_score_event(equipment_id: int, action: str):
     elif action == "sub":
         sub_points(equipment_id)
 
-# Window Resizing
+def handle_event_printing(shooter_id: int, target_id: int, is_green: bool, action: str):
+    if action == "unfriendly_fire":
+        if is_green:
+            shooter_name = green_players[shooter_id]["name"]
+            target_name = red_players[target_id]["name"]
+            shooter_color = (49, 225, 55)
+            target_color = (225, 49, 55)
+        else:
+            shooter_name = red_players[shooter_id]["name"]
+            target_name = green_players[target_id]["name"]
+            shooter_color = (225, 49, 55)
+            target_color = (49, 225, 55)
+
+        with dpg.group(parent="game_text", horizontal=True):
+            dpg.add_text(shooter_name, color=shooter_color)
+            dpg.add_text(" hit ")
+            dpg.add_text(target_name, color=target_color)
+            dpg.add_text("!")
+        dpg.add_text("(+10 points)", parent="game_text")
+
+    elif action == "friendly_fire":
+        if is_green:
+            shooter_name = green_players[shooter_id]["name"]
+            target_name = green_players[target_id]["name"]
+            team_color = (49, 225, 55)
+        else:
+            shooter_name = red_players[shooter_id]["name"]
+            target_name = red_players[target_id]["name"]
+            team_color = (225, 49, 55)
+
+        with dpg.group(parent="game_text", horizontal=True):
+            dpg.add_text("Oops! ")
+            dpg.add_text(shooter_name, color=team_color)
+            dpg.add_text(" hit ")
+            dpg.add_text(target_name, color=team_color)
+            dpg.add_text("!")
+        dpg.add_text("(-10 points each)", parent="game_text")
+
+    elif action == "base_score":
+        if is_green:
+            shooter_name = green_players[shooter_id]["name"]
+            base_name = "green base"
+            base_color = (49, 225, 55)
+        else:
+            shooter_name = red_players[shooter_id]["name"]
+            base_name = "red base"
+            base_color = (225, 49, 55)
+
+        with dpg.group(parent="game_text", horizontal=True):
+            dpg.add_text(shooter_name, color=base_color)
+            dpg.add_text(" scored ")
+            dpg.add_text(base_name, color=base_color)
+            dpg.add_text("!")
+        dpg.add_text("(+100 points)", parent="game_text")
+
+    dpg.set_y_scroll("game_text", -1)
+
 def resize_game_window():
     view_width = dpg.get_viewport_client_width()
     view_height = dpg.get_viewport_client_height()
@@ -88,8 +148,26 @@ def resize_game_window():
         center_x = max((view_width - total_table_width) // 2, 0)
         dpg.set_item_pos("score_group", (center_x, scoreTopPadding))
 
+    if dpg.does_item_exist("game_text"):
+        total_table_width = scoreWidth * 2
+        center_x = max((view_width - total_table_width) // 2, 0)
+        table_y = scoreTopPadding + scoreHeight + 10
+        dpg.set_item_pos("game_text", (center_x, table_y))
+
     if dpg.does_item_exist("timer_box"):
         dpg.set_item_pos("timer_box", (view_width - timerWidth - 20, scoreTopPadding))
+
+    # Center the child window showing the winner
+    if dpg.does_item_exist("winner_team"):
+        winner_x = max((view_width - winnerWidth) // 2, 0)
+        winner_y = max((view_height - winnerHeight) // 2 - 40, 0)
+        dpg.set_item_pos("winner_team", (winner_x, winner_y))
+
+        # Center the button under the child window
+        if dpg.does_item_exist("button_group"):
+            button_x = max((view_width - buttonWidth) // 2, 0)
+            button_y = winner_y + winnerHeight + 20  
+            dpg.set_item_pos("button_group", (button_x, button_y))
 
 # Game Screen
 def game_screen(red_data, green_data):
@@ -104,19 +182,18 @@ def game_screen(red_data, green_data):
     load_base_icon_texture()
     dpg.delete_item("team_window")
     
-    # Define font locally and apply it only to the game screen
-    with dpg.font_registry():
-        game_font = dpg.add_font("CONSOLA.TTF", 20)
-    # note from j.t. - we can't use absolute paths from our local machines in the VM,
-    # but we can put any .ttf we like in the repo and just reference it directly here.
-        
+    # Define font only to the game screen
+    if not dpg.does_item_exist("game_font"):
+        with dpg.font_registry():
+            dpg.add_font("CONSOLA.TTF", 20, tag="game_font")
+     
     with dpg.window(tag="game_screen", no_title_bar=True, no_move=True, no_resize=True, no_scrollbar=True):
         dpg.set_primary_window("game_screen", True)
 
         with dpg.group(tag="score_group", horizontal=True):
             # RED TEAM
             with dpg.child_window(tag="red_score", width=scoreWidth, height=scoreHeight, no_scrollbar=True):
-                dpg.bind_item_font("red_score", game_font)
+                dpg.bind_item_font("red_score", "game_font")
                 red_team_score = sum(player["score"] for player in red_players.values())
                 dpg.add_text(f"Red Team: {red_team_score}", tag="red_team_score_text")
                 dpg.add_separator()
@@ -137,7 +214,7 @@ def game_screen(red_data, green_data):
             dpg.bind_item_theme("red_score", red_theme)
 
             with dpg.child_window(tag="green_score", width=scoreWidth, height=scoreHeight, no_scrollbar=True):
-                dpg.bind_item_font("green_score", game_font)
+                dpg.bind_item_font("green_score", "game_font")
                 green_team_score = sum(player["score"] for player in green_players.values())
                 dpg.add_text(f"Green Team:  {green_team_score}", tag="green_team_score_text")
                 dpg.add_separator()
@@ -157,9 +234,22 @@ def game_screen(red_data, green_data):
                     dpg.add_theme_style(dpg.mvStyleVar_ChildRounding, 10)
             dpg.bind_item_theme("green_score", green_theme)
 
+        # Game play
+        with dpg.child_window(tag="game_text", width=(scoreWidth * 2), height=(scoreHeight // 4), no_scrollbar=True):
+            dpg.bind_item_font("game_text", "game_font")
+
+        # Theme for the box where the game text will go 
+        with dpg.theme() as game_theme:
+            with dpg.theme_component(dpg.mvAll):
+                dpg.add_theme_color(dpg.mvThemeCol_ChildBg, (0, 0, 0))
+                dpg.add_theme_color(dpg.mvThemeCol_Border, (200, 30, 30))
+                dpg.add_theme_style(dpg.mvStyleVar_ChildBorderSize, 2)
+                dpg.add_theme_style(dpg.mvStyleVar_ChildRounding, 10)
+        dpg.bind_item_theme("game_text", game_theme)
+
         with dpg.group(horizontal=True):
             with dpg.child_window(tag="timer_box", width=timerWidth, height=timerHeight, no_scrollbar=True):
-                dpg.bind_item_font("timer_box", game_font)
+                dpg.bind_item_font("timer_box", "game_font")
                 dpg.add_text("00:00", tag="timer_text")
 
         with dpg.theme() as timer_theme:
@@ -173,6 +263,40 @@ def game_screen(red_data, green_data):
                 dpg.add_theme_color(dpg.mvThemeCol_Border, (0, 0, 0))
         dpg.bind_item_theme("game_screen", screen_theme)
 
+def winner_screen():
+    if dpg.does_item_exist("game_screen"):
+        dpg.delete_item("game_screen")
+
+    if dpg.does_item_exist("winner_window"):
+        dpg.delete_item("winner_window")
+
+    with dpg.window(tag="winner_window", label="Game Over", width=1000, height=640, no_title_bar=True, no_move=True, no_resize=True, no_scrollbar=True) as winner_window:
+
+        with dpg.group(tag="group", horizontal=True):
+            with dpg.child_window(tag="winner_team", width=winnerWidth, height=winnerHeight):
+                dpg.add_text("Winner logic here", color=(255, 255, 0))
+
+        with dpg.group(tag="button_group", horizontal=True):
+            dpg.add_button(label="New Game", width=buttonWidth, height=buttonHeight, callback=new_game)
+
+    with dpg.theme() as window_theme:
+        with dpg.theme_component(dpg.mvAll):
+            dpg.add_theme_color(dpg.mvThemeCol_WindowBg, (0, 0, 0))
+            dpg.add_theme_color(dpg.mvThemeCol_Border, (0, 0, 0))
+    dpg.bind_item_theme("winner_window", window_theme)
+
+def new_game():
+    #print("Start New Game button clicked!")
+    global red_players, green_players
+    red_players.clear()
+    green_players.clear()
+
+    if dpg.does_item_exist("winner_window"):
+        dpg.delete_item("winner_window", children_only=False)
+
+    from main import show_player_entry
+    show_player_entry()
+    
 def run_pregame_timer(red_players, green_players):
     pygame.init()
     width, height = 1000, 640
@@ -201,7 +325,7 @@ def run_pregame_timer(red_players, green_players):
         if seconds < 0:
             seconds = 0
         
-        if not music_started and seconds <= 15:
+        if not music_started and seconds <= 16:
             music.play_music()
             music_started = True
 
@@ -225,9 +349,11 @@ def run_pregame_timer(red_players, green_players):
 
     pygame.display.quit()
 
-    network.broadcast_game_start()
-
     game_screen(red_players, green_players)
+
+    time.sleep(0.1)
+
+    network.broadcast_game_start()
 
 def runTimer():
     global startTime, musicStarted, gameDuration
@@ -242,6 +368,8 @@ def runTimer():
         dpg.set_value("timer_text", "TIME UP!")
         network.broadcast_game_end()
         started = False
+        winner_screen()
+
         return
     minutes = remaining // 60
     seconds = remaining % 60
@@ -279,4 +407,3 @@ def runTimer():
                 else:
                     dpg.add_spacer(width=20)
                 dpg.add_text(f"{data['name']:<10} {data['score']}", tag=f"green_score_{equip_id}")
-

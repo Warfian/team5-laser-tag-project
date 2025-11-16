@@ -63,7 +63,7 @@ def add_to_db(sender, app_data, user_data):
                     dpg.set_value(f"green_code_{i}", player_table[data])
 
         # Update player table
-        retrieve_db()
+        #retrieve_db()
         return
 
     # If the table does not have an ID-name pair, store the given data in a dictionary for later.
@@ -86,11 +86,11 @@ def add_to_db(sender, app_data, user_data):
         name = entry_book[user_data]
 
     # Send both inputs to the database
-    db.add(id, name)
+    #db.add(id, name)
 
     # Remove the Entry from the Entry Book
     entry_book.pop(user_data)
-    retrieve_db()
+    #retrieve_db()
 
 def splash_screen():
     pygame.init()
@@ -154,11 +154,11 @@ def resize_window(*_):
         if dpg.does_item_exist("tables_group") and dpg.does_item_exist("buttons_group"):
             total_table_width = tableWidth * 2 + 20
             left_table_spacer = max((view_width - total_table_width) // 2, 0)
-            dpg.set_item_pos("tables_group", (left_table_spacer, 50))
+            dpg.set_item_pos("tables_group", (left_table_spacer, 75))
 
             total_buttons_width = buttonWidth * 2 + spacerGap
             buttons_x = max((view_width - total_buttons_width) // 2, 0)
-            buttons_y = tableHeight + 70
+            buttons_y = tableHeight + 95
             dpg.set_item_pos("buttons_group", (buttons_x, buttons_y))
 
 def start_game_callback():
@@ -320,7 +320,7 @@ def main():
     splash_screen()
 
     dpg.create_context()
-    dpg.create_viewport(title="Laser Tag", width=1000, height=640)
+    dpg.create_viewport(title="Laser Tag", width=1020, height=730)
     dpg.set_viewport_small_icon("table_logo.ico")
     dpg.setup_dearpygui()
 
@@ -331,7 +331,7 @@ def main():
     dpg.show_viewport()
 
     # Retrieve the database in its current form on startup
-    retrieve_db()
+    #retrieve_db()
 
     network.main()
     network.start_listening(network.recv_sock, network.incoming_q)
@@ -344,7 +344,7 @@ def main():
         dpg.render_dearpygui_frame()
 
     dpg.destroy_context()
-    db.disconnect()
+    #db.disconnect()
 
 if __name__ == "__main__":
     main()
