@@ -7,6 +7,9 @@ crystalgooding -->  Crystal Gooding
 kylerj15       -->  Kyler Jones
 FortyFathom    -->  Jordan Wood
 
+**IMPORTANT NOTE:**
+In the player entry screen for this program, red equipment IDs must be odd, and green equipment IDs must be even.
+
 **Current Functionality:**
 - Launches splash screen and player entry table upon startup
 - Stores player ID and code name into database when ENTER is pressed in text box
@@ -17,9 +20,13 @@ FortyFathom    -->  Jordan Wood
 - Button to start game, which takes user into play action display
 - 30 minute countdown timer before the game begins, which launches in a separate window
 - Play action display tracks hits, friendly fire, and base scoring through UDP broadcasts
+- Hits, friendly fire, and base scores will print in the event window, which autoscrolls as events occur
 - Names in play action display will move to have the highest score at the top, team score displayed in the team's column
+- Whichever team score is the highest will flash during gameplay
 - 6 minute timer in play action display
 - Music plays upon start of game, and separate helmet noises will play upon hits, friendly fire, and base scores
+- Once timer finishes, a winner screen will appear and display a message for whichever team won, or will display a tie message
+- Button provided in winner screen which takes user back to player entry screen
 
 **How to Run:**
 1. Download contents of main github folder into local directory.

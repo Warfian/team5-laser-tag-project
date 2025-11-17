@@ -78,21 +78,23 @@ def process_messages(q):
         # for friendly fire, sum is always even; (odd+odd or even+even)
         sum = sender_id_num + target_id_num 
         even_sum = (sum % 2 == 0)
+
+        player_is_green = (sender_id_num % 2 == 0)
         
         if target_id_num == 53:
             # base score (red)
-            player_is_green = (sender_id_num % 2 == 0)
             if player_is_green:
                 broadcast_sock.sendto(str.encode(target_id), broadcast_addr_port)
                 gamescreen.handle_base_hit("red", sender_id_num)
+                gamescreen.handle_event_printing(sender_id_num, target_id_num, player_is_green, "base_score")
             music.play_base()
         
         elif target_id_num == 43:
             # base score (green)
-            player_is_red = (sender_id_num % 2 != 0)
-            if player_is_red:
+            if not player_is_green:
                 broadcast_sock.sendto(str.encode(target_id), broadcast_addr_port)
                 gamescreen.handle_base_hit("green", sender_id_num)
+                gamescreen.handle_event_printing(sender_id_num, target_id_num, player_is_green, "base_score")
             music.play_base()
         
         elif even_sum: 
@@ -101,12 +103,14 @@ def process_messages(q):
             broadcast_sock.sendto(str.encode(target_id), broadcast_addr_port)
             gamescreen.handle_score_event(sender_id_num, "sub")
             gamescreen.handle_score_event(target_id_num, "sub")
+            gamescreen.handle_event_printing(sender_id_num, target_id_num, player_is_green, "friendly_fire")
             music.play_friendly_fire()
         
         elif not even_sum:
             # unfriendly fire
             broadcast_sock.sendto(str.encode(target_id), broadcast_addr_port)
             gamescreen.handle_score_event(sender_id_num, "add")
+            gamescreen.handle_event_printing(sender_id_num, target_id_num, player_is_green, "unfriendly_fire")
             music.play_hit()
         
         else: 

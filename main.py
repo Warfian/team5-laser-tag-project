@@ -154,11 +154,11 @@ def resize_window(*_):
         if dpg.does_item_exist("tables_group") and dpg.does_item_exist("buttons_group"):
             total_table_width = tableWidth * 2 + 20
             left_table_spacer = max((view_width - total_table_width) // 2, 0)
-            dpg.set_item_pos("tables_group", (left_table_spacer, 50))
+            dpg.set_item_pos("tables_group", (left_table_spacer, 75))
 
             total_buttons_width = buttonWidth * 2 + spacerGap
             buttons_x = max((view_width - total_buttons_width) // 2, 0)
-            buttons_y = tableHeight + 70
+            buttons_y = tableHeight + 95
             dpg.set_item_pos("buttons_group", (buttons_x, buttons_y))
 
 def start_game_callback():
@@ -320,7 +320,7 @@ def main():
     splash_screen()
 
     dpg.create_context()
-    dpg.create_viewport(title="Laser Tag", width=1000, height=640)
+    dpg.create_viewport(title="Laser Tag", width=1020, height=730)
     dpg.set_viewport_small_icon("table_logo.ico")
     dpg.setup_dearpygui()
 
