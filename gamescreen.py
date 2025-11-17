@@ -25,8 +25,9 @@ winnerHeight = 410
 startTime = None
 musicStarted = False
 started = False
-gameDuration = 6 * 60
+gameDuration = 60
 flashCounter = 0
+winner_txt = "none"
 
 # Game Data Stores
 red_players = {}
@@ -137,6 +138,8 @@ def handle_event_printing(shooter_id: int, target_id: int, is_green: bool, actio
     dpg.set_y_scroll("game_text", -1)
 
 def resize_game_window():
+    global winner_txt, flashCounter
+
     view_width = dpg.get_viewport_client_width()
     view_height = dpg.get_viewport_client_height()
 
@@ -169,6 +172,18 @@ def resize_game_window():
             button_x = max((view_width - buttonWidth) // 2, 0)
             button_y = winner_y + winnerHeight + 20  
             dpg.set_item_pos("button_group", (button_x, button_y))
+        
+        # Flash winner text
+        if dpg.does_item_exist("winner_txt"):
+            flashCounter += 1
+
+            if (flashCounter > 50):
+                dpg.set_value("winner_txt", " ")
+            else:
+                dpg.set_value("winner_txt", winner_txt)
+
+            if (flashCounter > 100):
+                flashCounter = 0
 
 # Game Screen
 def game_screen(red_data, green_data):
@@ -187,6 +202,7 @@ def game_screen(red_data, green_data):
     if not dpg.does_item_exist("game_font"):
         with dpg.font_registry():
             dpg.add_font("CONSOLA.TTF", 20, tag="game_font")
+            dpg.add_font("CONSOLA.TTF", 70, tag="winner_font")
      
     with dpg.window(tag="game_screen", no_title_bar=True, no_move=True, no_resize=True, no_scrollbar=True):
         dpg.set_primary_window("game_screen", True)
@@ -265,17 +281,43 @@ def game_screen(red_data, green_data):
         dpg.bind_item_theme("game_screen", screen_theme)
 
 def winner_screen():
+    global red_players, green_players, winner_txt, winner_color
+
     if dpg.does_item_exist("game_screen"):
         dpg.delete_item("game_screen")
 
     if dpg.does_item_exist("winner_window"):
         dpg.delete_item("winner_window")
 
+    #Calulates the scores so we can see who won
+    red_score = sum(p["score"] for p in red_players.values())
+    green_score = sum(p["score"] for p in green_players.values())
+
+    if dpg.does_item_exist("game_screen"):
+        dpg.delete_item("game_screen")
+
+    if dpg.does_item_exist("winner_window"):
+        dpg.delete_item("winner_window")
+    
+    #Compares who won! 
+    if red_score > green_score:
+        winner_txt = "RED  TEAM  WINS!"
+        winner_color = (225, 49, 55)
+    elif green_score > red_score:
+        winner_txt = "GREEN TEAM WINS!"
+        winner_color = (49, 225, 55)
+    else:
+        winner_txt = "TEAMS HAVE TIED!"
+        winner_color = (255, 192, 203) #IM MAKING SOMETHING PINK IN THIS CODE RAHHHH
+
     with dpg.window(tag="winner_window", label="Game Over", width=1000, height=640, no_title_bar=True, no_move=True, no_resize=True, no_scrollbar=True) as winner_window:
+        dpg.add_spacer(height=200) #center
 
         with dpg.group(tag="group", horizontal=True):
             with dpg.child_window(tag="winner_team", width=winnerWidth, height=winnerHeight):
-                dpg.add_text("Winner logic here", color=(255, 255, 0), pos=(380, (winnerHeight // 2)))
+                dpg.bind_item_font("winner_team", "winner_font")
+                dpg.add_spacer(height=150)
+                dpg.add_text(winner_txt, color=winner_color, tag="winner_txt", pos=((winnerWidth // 8) + 35, (winnerHeight // 2)))
 
         with dpg.theme() as winner_theme:
             with dpg.theme_component(dpg.mvAll):
@@ -327,7 +369,7 @@ def run_pregame_timer(red_players, green_players):
                 pygame.quit()
                 sys.exit()
 
-        seconds = 30 - (pygame.time.get_ticks() - start) // 1000
+        seconds = 20 - (pygame.time.get_ticks() - start) // 1000
         if seconds < 0:
             seconds = 0
         

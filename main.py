@@ -63,7 +63,7 @@ def add_to_db(sender, app_data, user_data):
                     dpg.set_value(f"green_code_{i}", player_table[data])
 
         # Update player table
-        #retrieve_db()
+        retrieve_db()
         return
 
     # If the table does not have an ID-name pair, store the given data in a dictionary for later.
@@ -86,11 +86,11 @@ def add_to_db(sender, app_data, user_data):
         name = entry_book[user_data]
 
     # Send both inputs to the database
-    #db.add(id, name)
+    db.add(id, name)
 
     # Remove the Entry from the Entry Book
     entry_book.pop(user_data)
-    #retrieve_db()
+    retrieve_db()
 
 def splash_screen():
     pygame.init()
@@ -331,7 +331,7 @@ def main():
     dpg.show_viewport()
 
     # Retrieve the database in its current form on startup
-    #retrieve_db()
+    retrieve_db()
 
     network.main()
     network.start_listening(network.recv_sock, network.incoming_q)
@@ -344,7 +344,7 @@ def main():
         dpg.render_dearpygui_frame()
 
     dpg.destroy_context()
-    #db.disconnect()
+    db.disconnect()
 
 if __name__ == "__main__":
     main()
