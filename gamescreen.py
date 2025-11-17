@@ -18,7 +18,7 @@ timerWidth = 100
 timerHeight = 40
 buttonWidth = 100
 buttonHeight = 100
-winnerWidth = 450
+winnerWidth = 892
 winnerHeight = 410
 
 # Global state
@@ -26,6 +26,7 @@ startTime = None
 musicStarted = False
 started = False
 gameDuration = 6 * 60
+flashCounter = 0
 
 # Game Data Stores
 red_players = {}
@@ -274,7 +275,12 @@ def winner_screen():
 
         with dpg.group(tag="group", horizontal=True):
             with dpg.child_window(tag="winner_team", width=winnerWidth, height=winnerHeight):
-                dpg.add_text("Winner logic here", color=(255, 255, 0))
+                dpg.add_text("Winner logic here", color=(255, 255, 0), pos=(380, (winnerHeight // 2)))
+
+        with dpg.theme() as winner_theme:
+            with dpg.theme_component(dpg.mvAll):
+                dpg.add_theme_color(dpg.mvThemeCol_ChildBg, (0, 0, 0))
+        dpg.bind_item_theme("winner_team", winner_theme)    
 
         with dpg.group(tag="button_group", horizontal=True):
             dpg.add_button(label="New Game", width=buttonWidth, height=buttonHeight, callback=new_game)
@@ -356,7 +362,7 @@ def run_pregame_timer(red_players, green_players):
     network.broadcast_game_start()
 
 def runTimer():
-    global startTime, musicStarted, gameDuration
+    global startTime, musicStarted, gameDuration, flashCounter
 
     if startTime is None or not dpg.does_item_exist("timer_text"):
         return
@@ -376,13 +382,26 @@ def runTimer():
     dpg.set_value("timer_text", f"{minutes:02d}:{seconds:02d}")
 
     # Updated Team scores
-    if dpg.does_item_exist("red_team_score_text"):
-        red_score = sum(player["score"] for player in red_players.values())
-        dpg.set_value("red_team_score_text", f"Red Team: {red_score}")
+    if dpg.does_item_exist("red_team_score_text") and dpg.does_item_exist("green_team_score_text"):
+        flashCounter += 1
 
-    if dpg.does_item_exist("green_team_score_text"):
+        red_score = sum(player["score"] for player in red_players.values())
         green_score = sum(player["score"] for player in green_players.values())
+
+        dpg.set_value("red_team_score_text", f"Red Team: {red_score}")
         dpg.set_value("green_team_score_text", f"Green Team: {green_score}")
+
+        if (flashCounter > 30):
+            if (red_score > green_score):
+                dpg.set_value("red_team_score_text", f"Red Team: ")
+            elif (green_score > red_score):
+                dpg.set_value("green_team_score_text", f"Green Team: ")
+            else:
+                dpg.set_value("red_team_score_text", f"Red Team: ")
+                dpg.set_value("green_team_score_text", f"Green Team: ")
+
+        if (flashCounter > 60):
+            flashCounter = 0
 
     # Redraw Red player rows
     if dpg.does_item_exist("red_player_rows"):
