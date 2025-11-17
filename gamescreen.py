@@ -25,7 +25,7 @@ winnerHeight = 410
 startTime = None
 musicStarted = False
 started = False
-gameDuration = 60
+gameDuration = 6 * 60
 flashCounter = 0
 winner_txt = "none"
 
@@ -369,7 +369,7 @@ def run_pregame_timer(red_players, green_players):
                 pygame.quit()
                 sys.exit()
 
-        seconds = 20 - (pygame.time.get_ticks() - start) // 1000
+        seconds = 30 - (pygame.time.get_ticks() - start) // 1000
         if seconds < 0:
             seconds = 0
         
